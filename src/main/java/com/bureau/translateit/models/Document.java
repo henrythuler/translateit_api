@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "documents")
+@Table(name = "T_DOCUMENT")
 public class Document {
 
     @Id
