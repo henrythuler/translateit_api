@@ -23,5 +23,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<String> handleDocumentNotFoundException(DocumentNotFoundException e){
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+    }
 
+    @ExceptionHandler(NoRecordsFoundException.class)
+    public ResponseEntity<String> handleNoRecordsFoundException(NoRecordsFoundException e){
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ResponseEntity<String> handleEmailAlreadyUsedException(EmailAlreadyUsedException e){
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+    }
 }
