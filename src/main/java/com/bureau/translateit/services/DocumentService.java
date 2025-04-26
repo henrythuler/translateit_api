@@ -6,8 +6,7 @@ import com.bureau.translateit.exceptions.NoRecordsFoundException;
 import com.bureau.translateit.exceptions.TranslatorNotFoundException;
 import com.bureau.translateit.models.Document;
 import com.bureau.translateit.models.Translator;
-import com.bureau.translateit.models.dtos.CreateDocumentDto;
-import com.bureau.translateit.models.dtos.UpdateDocumentDto;
+import com.bureau.translateit.models.dtos.DocumentDto;
 import com.bureau.translateit.repositories.DocumentRepository;
 import com.bureau.translateit.repositories.TranslatorRepository;
 import com.opencsv.CSVReader;
@@ -15,7 +14,6 @@ import com.opencsv.exceptions.CsvValidationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,10 +34,10 @@ public class DocumentService {
     @Autowired
     private TranslatorRepository translatorRepository;
 
-    public Document create(CreateDocumentDto createDocumentDto){
-            Translator translator = translatorRepository.findByEmail(createDocumentDto.getAuthor()).orElseThrow(() -> new TranslatorNotFoundException(createDocumentDto.getAuthor()));
+    public Document create(DocumentDto documentDto){
+            Translator translator = translatorRepository.findByEmail(documentDto.getAuthor()).orElseThrow(() -> new TranslatorNotFoundException(documentDto.getAuthor()));
             Document newDocument = new Document();
-            BeanUtils.copyProperties(createDocumentDto, newDocument);
+            BeanUtils.copyProperties(documentDto, newDocument);
             newDocument.setTranslator(translator);
             return documentRepository.save(newDocument);
     }
@@ -104,14 +102,14 @@ public class DocumentService {
         return documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
     }
 
-    public Document update(UUID id, UpdateDocumentDto updateDocumentDto) {
+    public Document update(UUID id, DocumentDto documentDto) {
         try {
             Document foundDocument = documentRepository.getReferenceById(id);
 
-            BeanUtils.copyProperties(updateDocumentDto, foundDocument);
+            BeanUtils.copyProperties(documentDto, foundDocument);
 
-            Translator translator = translatorRepository.findByEmail(updateDocumentDto.getAuthor()).orElseThrow(() -> new TranslatorNotFoundException(updateDocumentDto.getAuthor()));
-            foundDocument.setAuthor(updateDocumentDto.getAuthor());
+            Translator translator = translatorRepository.findByEmail(documentDto.getAuthor()).orElseThrow(() -> new TranslatorNotFoundException(documentDto.getAuthor()));
+            foundDocument.setAuthor(documentDto.getAuthor());
             foundDocument.setTranslator(translator);
 
             return documentRepository.save(foundDocument);
@@ -132,7 +130,7 @@ public class DocumentService {
             }
 
             String[] row;
-            while ((row = csvReader.readNext()) != null) {
+            while((row = csvReader.readNext()) != null) {
                 UUID id;
                 try {
                     id = UUID.fromString(row[0]);
@@ -142,14 +140,14 @@ public class DocumentService {
 
                 Document document = documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
 
-                if (row[1] != null && !row[1].isEmpty()) {
+                if(row[1] != null && !row[1].isEmpty()) {
                     document.setSubject(row[1]);
                 }
-                if (row[2] != null && !row[2].isEmpty()) {
+                if(row[2] != null && !row[2].isEmpty()) {
                     document.setContent(row[2]);
                 }
                 document.setLocale(row.length == 5 && !row[3].isEmpty() ? row[3] : "");
-                if (row[4] != null && !row[4].isEmpty()) {
+                if(row[4] != null && !row[4].isEmpty()) {
                     final String author = row[3];
                     Translator translator = translatorRepository.findByEmail(row[4]).orElseThrow(() -> new TranslatorNotFoundException(author));
                     document.setAuthor(row[4]);
@@ -166,7 +164,7 @@ public class DocumentService {
     }
 
     public void delete(UUID id) {
-        if (!documentRepository.existsById(id)) {
+        if(!documentRepository.existsById(id)) {
             throw new DocumentNotFoundException(id);
         }
         documentRepository.deleteById(id);
