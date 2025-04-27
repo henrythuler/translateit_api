@@ -74,7 +74,7 @@ public class DocumentService {
         return documentRepository.saveAll(documents);
     }
 
-    public Page<Document> getDocuments(String author, String locale, Pageable pageable) {
+    public Page<Document> getAll(String author, String locale, Pageable pageable) {
         Page<Document> foundDocuments;
 
         //Get by author and locale
@@ -98,7 +98,7 @@ public class DocumentService {
         return documentRepository.findAll(pageable);
     }
 
-    public Document getDocumentById(UUID id) {
+    public Document getById(UUID id) {
         return documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
     }
 
@@ -138,23 +138,23 @@ public class DocumentService {
                     throw new IllegalArgumentException("Invalid UUID: " + row[0]);
                 }
 
-                Document document = documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
+                Document foundDocument = documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
 
                 if(row[1] != null && !row[1].isEmpty()) {
-                    document.setSubject(row[1]);
+                    foundDocument.setSubject(row[1]);
                 }
                 if(row[2] != null && !row[2].isEmpty()) {
-                    document.setContent(row[2]);
+                    foundDocument.setContent(row[2]);
                 }
-                document.setLocale(row.length == 5 && !row[3].isEmpty() ? row[3] : "");
+                foundDocument.setLocale(row.length == 5 && !row[3].isEmpty() ? row[3] : "");
                 if(row[4] != null && !row[4].isEmpty()) {
-                    final String author = row[3];
-                    Translator translator = translatorRepository.findByEmail(row[4]).orElseThrow(() -> new TranslatorNotFoundException(author));
-                    document.setAuthor(row[4]);
-                    document.setTranslator(translator);
+                    final String author = row[4];
+                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
+                    foundDocument.setAuthor(author);
+                    foundDocument.setTranslator(translator);
                 }
 
-                updatedDocuments.add(document);
+                updatedDocuments.add(foundDocument);
             }
         } catch (IOException | CsvValidationException e) {
             throw new InvalidCsvException();
