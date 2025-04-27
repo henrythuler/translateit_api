@@ -30,8 +30,8 @@ public class DocumentController {
         return ResponseEntity.created(location).body(document);
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<List<Document>> uploadDocumentsCsv(@RequestParam("file") MultipartFile file) {
+    @PostMapping("/create/upload")
+    public ResponseEntity<List<Document>> uploadDocumentsCsv(@RequestPart("file") MultipartFile file) {
         List<Document> documents = documentService.createFromCsv(file);
         return ResponseEntity.ok(documents);
     }
@@ -41,13 +41,13 @@ public class DocumentController {
             @RequestParam(required = false) String locale,
             @RequestParam(required = false) String author,
             Pageable pageable) {
-        Page<Document> documents = documentService.getDocuments(locale, author, pageable);
+        Page<Document> documents = documentService.getAll(locale, author, pageable);
         return ResponseEntity.ok(documents);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Document> getDocumentById(@PathVariable UUID id) {
-        Document document = documentService.getDocumentById(id);
+        Document document = documentService.getById(id);
         return ResponseEntity.ok(document);
     }
 
@@ -57,8 +57,8 @@ public class DocumentController {
         return ResponseEntity.ok(updatedDocument);
     }
 
-    @PutMapping("/upload/update")
-    public ResponseEntity<List<Document>> updateCsv(@RequestParam("file") MultipartFile file) {
+    @PutMapping("/update/upload")
+    public ResponseEntity<List<Document>> updateDocumentsCsv(@RequestPart("file") MultipartFile file) {
         List<Document> updatedDocuments = documentService.updateFromCsv(file);
         return ResponseEntity.ok(updatedDocuments);
     }
