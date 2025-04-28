@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -101,7 +102,7 @@ public class DocumentController {
     public ResponseEntity<Page<Document>> getDocuments(
             @RequestParam(required = false) String author,
             @RequestParam(required = false) String locale,
-            Pageable pageable
+            @ParameterObject Pageable pageable
     ) {
         Page<Document> documents = documentService.getAll(author, locale, pageable);
         return ResponseEntity.ok(documents);
