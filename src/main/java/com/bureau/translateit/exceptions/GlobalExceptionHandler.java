@@ -1,6 +1,7 @@
 package com.bureau.translateit.exceptions;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -15,7 +16,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException e){
         Map<String, String> error = new HashMap<>();
@@ -23,7 +23,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(InvalidDocumentCsvException.class)
     public ResponseEntity<Map<String, String>> handleInvalidDocumentCsvException(InvalidDocumentCsvException e){
         Map<String, String> error = new HashMap<>();
@@ -31,7 +30,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(InvalidTranslatorCsvException.class)
     public ResponseEntity<Map<String, String>> handleInvalidTranslatorCsvException(InvalidTranslatorCsvException e){
         Map<String, String> error = new HashMap<>();
@@ -39,7 +37,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(TranslatorNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleTranslatorNotFoundException(TranslatorNotFoundException e){
         Map<String, String> error = new HashMap<>();
@@ -47,7 +44,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(DocumentNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleDocumentNotFoundException(DocumentNotFoundException e){
         Map<String, String> error = new HashMap<>();
@@ -55,7 +51,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoRecordsFoundException.class)
     public ResponseEntity<Map<String, String>> handleNoRecordsFoundException(NoRecordsFoundException e){
         Map<String, String> error = new HashMap<>();
@@ -63,7 +58,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    @ResponseStatus(HttpStatus.CONFLICT)
     @ExceptionHandler(EmailAlreadyUsedException.class)
     public ResponseEntity<Map<String, String>> handleEmailAlreadyUsedException(EmailAlreadyUsedException e){
         Map<String, String> error = new HashMap<>();
@@ -71,7 +65,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity <Map<String, String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e){
         Map<String, String> errors = new HashMap<>();
@@ -83,7 +76,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity <Map<String, String>> handlePropertyReferenceException(PropertyReferenceException e){
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Sort query not valid: " + e.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity <Map<String, String>> handleConstraintViolationException(ConstraintViolationException e){
         Map<String, String> errors = new HashMap<>();
