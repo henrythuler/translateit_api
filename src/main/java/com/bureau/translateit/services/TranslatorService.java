@@ -129,7 +129,7 @@ public class TranslatorService {
             String[] headers = csvReader.readNext();
 
             //Headers should be: id,name,email,source_language,target_language
-            if (headers == null || headers.length < 5) {
+            if(!headers[0].equals("id")) {
                 throw new InvalidTranslatorCsvException();
             }
 
@@ -147,19 +147,22 @@ public class TranslatorService {
                 if(row[1] != null && !row[1].isEmpty()) {
                     foundTranslator.setName(row[1]);
                 }
+
                 // If a new email has been passed, we need to check if it's not already in use
-                if ((row[2] != null && !row[2].equals(foundTranslator.getEmail())) && CheckIsValidEmail.isValid(row[2])) {
-                    if (translatorRepository.findByEmail(row[2]).isPresent()) {
+                if((row[2] != null && !row[2].equals(foundTranslator.getEmail()))) {
+                    if(translatorRepository.findByEmail(row[2]).isPresent()) {
                         throw new EmailAlreadyUsedException(row[2]);
+                    }else if(!CheckIsValidEmail.isValid(row[2])){
+                        throw new IllegalArgumentException("Email: " + row[2] + " is not valid.");
                     }else{
                         foundTranslator.setEmail(row[2]);
                     }
-                }else{
-                    throw new IllegalArgumentException("Email: " + row[2] + " is not valid.");
                 }
+
                 if(row[3] != null && !row[3].isEmpty()) {
                     foundTranslator.setSourceLanguage(row[3]);
                 }
+
                 if(row[4] != null && !row[4].isEmpty()) {
                     foundTranslator.setTargetLanguage(row[4]);
                 }
@@ -174,7 +177,7 @@ public class TranslatorService {
     }
 
     public void delete(UUID id) {
-        if (!translatorRepository.existsById(id)) {
+        if(!translatorRepository.existsById(id)) {
             throw new TranslatorNotFoundException(id);
         }
 
