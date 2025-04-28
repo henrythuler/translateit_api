@@ -1,15 +1,15 @@
 package com.bureau.translateit.services;
 
-import com.bureau.translateit.exceptions.DocumentNotFoundException;
-import com.bureau.translateit.exceptions.InvalidCsvException;
-import com.bureau.translateit.exceptions.NoRecordsFoundException;
-import com.bureau.translateit.exceptions.TranslatorNotFoundException;
+import com.bureau.translateit.exceptions.*;
 import com.bureau.translateit.models.Document;
 import com.bureau.translateit.models.Translator;
 import com.bureau.translateit.models.dtos.DocumentDto;
 import com.bureau.translateit.repositories.DocumentRepository;
 import com.bureau.translateit.repositories.TranslatorRepository;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvValidationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
@@ -45,12 +45,13 @@ public class DocumentService {
     public List<Document> createFromCsv(MultipartFile file) {
         List<Document> documents = new ArrayList<>();
         try {
-            CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
+            CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
+            CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
             //Headers should be: subject,content,locale(optional),author
             if(headers == null || headers.length < 3) {
-                throw new InvalidCsvException();
+                throw new InvalidDocumentCsvException();
             }
 
             String[] row;
@@ -58,18 +59,32 @@ public class DocumentService {
                 Document document = new Document();
                 document.setSubject(row[0]);
                 document.setContent(row[1]);
-                //If there's 4 headers, means that locale exists
-                document.setLocale(row.length == 4 && !row[2].isEmpty() ? row[2] : "");
-                document.setAuthor(row[3]);
 
-                final String author = row[3];
+                final String author;
+
+                //If there's 4 headers, means that locale exists
+                if(row.length == 4){
+                    if(row[0].isEmpty() || row[1].isEmpty() || row[3].isEmpty()){
+                        throw new InvalidTranslatorCsvException();
+                    }
+                    document.setLocale(!row[2].isEmpty() ? row[2] : "");
+                    author = row[3];
+                }else{
+                    if(row[0].isEmpty() || row[1].isEmpty() || row[2].isEmpty()){
+                        throw new InvalidTranslatorCsvException();
+                    }
+                    author = row[2];
+                }
+
+                document.setAuthor(author);
+
                 Translator translator = translatorRepository.findByEmail(row[3]).orElseThrow(() -> new TranslatorNotFoundException(author));
                 document.setTranslator(translator);
 
                 documents.add(document);
             }
-        } catch (IOException | CsvValidationException e) {
-            throw new InvalidCsvException();
+        } catch (IOException | CsvValidationException | ArrayIndexOutOfBoundsException e) {
+            throw new InvalidDocumentCsvException();
         }
         return documentRepository.saveAll(documents);
     }
@@ -95,7 +110,7 @@ public class DocumentService {
             if(foundDocuments.isEmpty()) throw new NoRecordsFoundException("Documents");
         }
 
-        return documentRepository.findAll(pageable);
+        return foundDocuments;
     }
 
     public Document getById(UUID id) {
@@ -121,12 +136,13 @@ public class DocumentService {
     public List<Document> updateFromCsv(MultipartFile file) {
         List<Document> updatedDocuments = new ArrayList<>();
         try {
-            CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
+            CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
+            CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
             //Headers should be: id,subject,content,locale(optional),author
             if (headers == null || headers.length < 4) {
-                throw new InvalidCsvException();
+                throw new InvalidDocumentCsvException();
             }
 
             String[] row;
@@ -146,18 +162,28 @@ public class DocumentService {
                 if(row[2] != null && !row[2].isEmpty()) {
                     foundDocument.setContent(row[2]);
                 }
-                foundDocument.setLocale(row.length == 5 && !row[3].isEmpty() ? row[3] : "");
-                if(row[4] != null && !row[4].isEmpty()) {
-                    final String author = row[4];
-                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
-                    foundDocument.setAuthor(author);
-                    foundDocument.setTranslator(translator);
+                //Verifying if the row has its 5 values (locale might be empty, but has been passed)
+                if(row.length == 5){
+                    foundDocument.setLocale(!row[3].isEmpty() ? row[3] : "");
+                    if(row[4] != null && !row[4].isEmpty()) {
+                        final String author = row[4];
+                        Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
+                        foundDocument.setAuthor(author);
+                        foundDocument.setTranslator(translator);
+                    }
+                }else{
+                    if(row[3] != null && !row[3].isEmpty()) {
+                        final String author = row[3];
+                        Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
+                        foundDocument.setAuthor(author);
+                        foundDocument.setTranslator(translator);
+                    }
                 }
 
                 updatedDocuments.add(foundDocument);
             }
-        } catch (IOException | CsvValidationException e) {
-            throw new InvalidCsvException();
+        } catch (IOException | CsvValidationException | ArrayIndexOutOfBoundsException e) {
+            throw new InvalidDocumentCsvException();
         }
         
         return documentRepository.saveAll(updatedDocuments);

@@ -1,17 +1,22 @@
 package com.bureau.translateit.services;
 
 import com.bureau.translateit.exceptions.EmailAlreadyUsedException;
-import com.bureau.translateit.exceptions.InvalidCsvException;
+import com.bureau.translateit.exceptions.InvalidTranslatorCsvException;
 import com.bureau.translateit.exceptions.TranslatorNotFoundException;
 import com.bureau.translateit.models.Translator;
 import com.bureau.translateit.models.dtos.TranslatorDto;
 import com.bureau.translateit.repositories.TranslatorRepository;
+import com.bureau.translateit.utils.CheckIsValidEmail;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvValidationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,18 +47,29 @@ public class TranslatorService {
     public List<Translator> createFromCsv(MultipartFile file) {
         List<Translator> translators = new ArrayList<>();
         try {
-            CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
+            CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
+            CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
             //Headers should be: name,email,source_language,target_language
             if(headers == null || headers.length < 4) {
-                throw new InvalidCsvException();
+                throw new InvalidTranslatorCsvException();
             }
 
             String[] row;
             while((row = csvReader.readNext()) != null) {
                 if (translatorRepository.findByEmail(row[1]).isPresent()) {
                     throw new EmailAlreadyUsedException(row[1]);
+                }
+
+                //Verifying is there's an empty value
+                if(row[0].isEmpty() || row[1].isEmpty() || row[2].isEmpty() || row[3].isEmpty()){
+                    throw new InvalidTranslatorCsvException();
+                }
+
+                //Verifying if the email is valid
+                if(!CheckIsValidEmail.isValid(row[1])){
+                    throw new IllegalArgumentException("Email: " + row[1] + "is not valid");
                 }
 
                 Translator translator = new Translator();
@@ -64,22 +80,23 @@ public class TranslatorService {
 
                 translators.add(translator);
             }
-        } catch (IOException | CsvValidationException e) {
-            throw new InvalidCsvException();
+        } catch (IOException | CsvValidationException | ArrayIndexOutOfBoundsException e) {
+            throw new InvalidTranslatorCsvException();
         }
         return translatorRepository.saveAll(translators);
     }
 
-    public Page<Translator> getAll(Pageable pageable) {
+    public Page<Translator> getAll(String email, Pageable pageable) {
+        //If this is a search by email
+        if(email != null && !email.isEmpty()){
+            Translator foundTranslator = translatorRepository.findByEmail(email).orElseThrow(() -> new TranslatorNotFoundException(email));
+            return new PageImpl<>(List.of(foundTranslator));
+        }
         return translatorRepository.findAll(pageable);
     }
 
     public Translator getById(UUID id) {
         return translatorRepository.findById(id).orElseThrow(() -> new TranslatorNotFoundException(id));
-    }
-
-    public Translator getByEmail(String email) {
-        return translatorRepository.findByEmail(email).orElseThrow(() -> new TranslatorNotFoundException(email));
     }
 
     public Translator update(UUID id, TranslatorDto translatorDTO) {
@@ -107,12 +124,13 @@ public class TranslatorService {
     public List<Translator> updateFromCsv(MultipartFile file) {
         List<Translator> updatedTranslators = new ArrayList<>();
         try {
-            CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()));
+            CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
+            CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
             //Headers should be: id,name,email,source_language,target_language
             if (headers == null || headers.length < 5) {
-                throw new InvalidCsvException();
+                throw new InvalidTranslatorCsvException();
             }
 
             String[] row;
@@ -130,12 +148,14 @@ public class TranslatorService {
                     foundTranslator.setName(row[1]);
                 }
                 // If a new email has been passed, we need to check if it's not already in use
-                if (row[2] != null && !row[2].equals(foundTranslator.getEmail())) {
+                if ((row[2] != null && !row[2].equals(foundTranslator.getEmail())) && CheckIsValidEmail.isValid(row[2])) {
                     if (translatorRepository.findByEmail(row[2]).isPresent()) {
                         throw new EmailAlreadyUsedException(row[2]);
                     }else{
                         foundTranslator.setEmail(row[2]);
                     }
+                }else{
+                    throw new IllegalArgumentException("Email: " + row[2] + " is not valid.");
                 }
                 if(row[3] != null && !row[3].isEmpty()) {
                     foundTranslator.setSourceLanguage(row[3]);
@@ -146,8 +166,8 @@ public class TranslatorService {
 
                 updatedTranslators.add(foundTranslator);
             }
-        } catch (IOException | CsvValidationException e) {
-            throw new InvalidCsvException();
+        } catch (IOException | CsvValidationException | ArrayIndexOutOfBoundsException e) {
+            throw new InvalidTranslatorCsvException();
         }
 
         return translatorRepository.saveAll(updatedTranslators);
