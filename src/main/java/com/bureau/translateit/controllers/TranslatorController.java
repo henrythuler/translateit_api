@@ -147,7 +147,7 @@ public class TranslatorController {
         consumes = {"application/json"},
         produces = {"application/json"}
     )
-    public ResponseEntity<Translator> updateTranslator(@PathVariable UUID id, @RequestBody TranslatorDto translatorDTO) {
+    public ResponseEntity<Translator> updateTranslator(@PathVariable UUID id, @RequestBody @Valid TranslatorDto translatorDTO) {
         Translator updatedTranslator = translatorService.update(id, translatorDTO);
         return ResponseEntity.ok(updatedTranslator);
     }
