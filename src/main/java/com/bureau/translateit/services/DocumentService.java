@@ -6,6 +6,7 @@ import com.bureau.translateit.models.Translator;
 import com.bureau.translateit.models.dtos.DocumentDto;
 import com.bureau.translateit.repositories.DocumentRepository;
 import com.bureau.translateit.repositories.TranslatorRepository;
+import com.bureau.translateit.utils.CheckIsValidEmail;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,20 +67,19 @@ public class DocumentService {
                 //If there's 4 headers, means that locale exists
                 if(row.length == 4){
                     if(row[0].isEmpty() || row[1].isEmpty() || row[3].isEmpty()){
-                        throw new InvalidTranslatorCsvException();
+                        throw new InvalidDocumentCsvException();
                     }
                     document.setLocale(!row[2].isEmpty() ? row[2] : "");
                     author = row[3];
                 }else{
                     if(row[0].isEmpty() || row[1].isEmpty() || row[2].isEmpty()){
-                        throw new InvalidTranslatorCsvException();
+                        throw new InvalidDocumentCsvException();
                     }
                     author = row[2];
                 }
 
+                Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
                 document.setAuthor(author);
-
-                Translator translator = translatorRepository.findByEmail(row[3]).orElseThrow(() -> new TranslatorNotFoundException(author));
                 document.setTranslator(translator);
 
                 documents.add(document);
@@ -159,25 +160,39 @@ public class DocumentService {
                 if(row[1] != null && !row[1].isEmpty()) {
                     foundDocument.setSubject(row[1]);
                 }
+
                 if(row[2] != null && !row[2].isEmpty()) {
                     foundDocument.setContent(row[2]);
                 }
+
+                String author;
+
                 //Verifying if the row has its 5 values (locale might be empty, but has been passed)
                 if(row.length == 5){
                     foundDocument.setLocale(!row[3].isEmpty() ? row[3] : "");
                     if(row[4] != null && !row[4].isEmpty()) {
-                        final String author = row[4];
-                        Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
-                        foundDocument.setAuthor(author);
-                        foundDocument.setTranslator(translator);
+                        if(!CheckIsValidEmail.isValid(row[4])){
+                            throw new IllegalArgumentException("Email: " + row[4] + " is not valid.");
+                        }
+                        author = row[4];
+                    }else{
+                        author = "";
                     }
                 }else{
                     if(row[3] != null && !row[3].isEmpty()) {
-                        final String author = row[3];
-                        Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
-                        foundDocument.setAuthor(author);
-                        foundDocument.setTranslator(translator);
+                        if(!CheckIsValidEmail.isValid(row[3])){
+                            throw new IllegalArgumentException("Email: " + row[3] + " is not valid.");
+                        }
+                        author = row[3];
+                    }else{
+                        author = "";
                     }
+                }
+
+                if(!author.isEmpty()){
+                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
+                    foundDocument.setAuthor(author);
+                    foundDocument.setTranslator(translator);
                 }
 
                 updatedDocuments.add(foundDocument);
