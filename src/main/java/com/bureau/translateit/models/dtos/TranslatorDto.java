@@ -14,7 +14,7 @@ public class TranslatorDto {
 
     @NotBlank(message = "Email should not be blank.")
     @Size(max = 255, message = "Email shouldn't have more than 255 characters.")
-    @Email(message = "Author should be a valid email.", regexp = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$")
+    @Email(message = "Email should be a valid email.")
     private String email;
 
     @NotBlank(message = "Source Language should not be blank.")
