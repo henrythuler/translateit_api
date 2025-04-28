@@ -1,7 +1,7 @@
 package com.bureau.translateit.exceptions;
 
-public class InvalidCsvException extends RuntimeException {
-    public InvalidDocumentCsvException(String entity) {
-        super("Invalid CSV.\nCreation CSV File content = subject;content;locale(optional);author\nUpdate CSV File Content");
+public class InvalidDocumentCsvException extends RuntimeException {
+    public InvalidDocumentCsvException() {
+        super("Invalid format: CSV file content should be id(only when uploading for update);subject;content;locale(optional);author");
     }
 }
