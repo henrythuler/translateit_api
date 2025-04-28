@@ -1,5 +1,6 @@
 package com.bureau.translateit.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -28,6 +29,8 @@ public class Translator {
     @Column(name = "target_language", nullable = false)
     private String targetLanguage;
 
-    @OneToMany(mappedBy = "translator", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "translator", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Document> documents = new ArrayList<>();
+
 }

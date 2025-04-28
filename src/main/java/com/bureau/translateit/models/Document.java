@@ -1,5 +1,6 @@
 package com.bureau.translateit.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,7 +27,8 @@ public class Document {
     @Column(nullable = false)
     private String author;
 
-    @ManyToOne()
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "translator_id", nullable = false)
+    @JsonBackReference
     private Translator translator;
 }
