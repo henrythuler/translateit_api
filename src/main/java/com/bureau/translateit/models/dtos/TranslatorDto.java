@@ -22,6 +22,6 @@ public class TranslatorDto {
     private String sourceLanguage;
 
     @NotBlank(message = "Target Language should not be blank.")
-    @Size(max = 5, message = "Target Language shouldn't have more than 255 characters.")
+    @Size(max = 5, message = "Target Language shouldn't have more than 5 characters.")
     private String targetLanguage;
 }
