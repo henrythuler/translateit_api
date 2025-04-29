@@ -11,7 +11,13 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "T_DOCUMENT")
+@Table(
+    name = "T_DOCUMENT",
+    indexes = {
+        @Index(name = "idx_document_author", columnList = "author"),
+        @Index(name = "idx_document_locale_author", columnList = "locale,author")
+    }
+)
 public class Document {
 
     @Id

@@ -13,7 +13,12 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "T_TRANSLATOR")
+@Table(
+    name = "T_TRANSLATOR",
+    indexes = {
+        @Index(name = "idx_translator_email", columnList = "email"),
+    }
+)
 public class Translator {
 
     @Id
