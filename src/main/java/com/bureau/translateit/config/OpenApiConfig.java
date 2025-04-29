@@ -4,6 +4,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.tags.Tag;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,7 +20,7 @@ public class OpenApiConfig {
                         new Info()
                                 .title("TranslateIt API")
                                 .version("v1")
-                                .description("TranslateIt API developed with Spring and PostgreSQL for Bureau Works Test.")
+                                .description("TranslateIt API developed with Spring and Postgres for Bureau Works Test.")
                                 .license(new License().name("MIT").url("https://www.mit.edu/~amini/LICENSE.md"))
                 )
                 .tags(getTags());
@@ -35,5 +36,13 @@ public class OpenApiConfig {
         tag2.setDescription("Documents management routes.");
 
         return Arrays.asList(tag1, tag2);
+    }
+
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+                .group("public")
+                .pathsToMatch("/api/**")
+                .build();
     }
 }

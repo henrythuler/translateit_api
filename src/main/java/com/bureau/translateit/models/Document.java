@@ -3,7 +3,10 @@ package com.bureau.translateit.models;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SourceType;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -26,6 +29,9 @@ public class Document {
 
     @Column(nullable = false)
     private String author;
+
+    @CreationTimestamp(source = SourceType.DB)
+    private Instant createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "translator_id", nullable = false)
