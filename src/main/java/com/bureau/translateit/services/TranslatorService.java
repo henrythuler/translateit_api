@@ -5,6 +5,7 @@ import com.bureau.translateit.exceptions.InvalidTranslatorCsvException;
 import com.bureau.translateit.exceptions.TranslatorNotFoundException;
 import com.bureau.translateit.models.Translator;
 import com.bureau.translateit.models.dtos.TranslatorDto;
+import com.bureau.translateit.repositories.DocumentRepository;
 import com.bureau.translateit.repositories.TranslatorRepository;
 import com.bureau.translateit.utils.CheckIsValidEmail;
 import com.opencsv.CSVParser;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -33,13 +35,19 @@ public class TranslatorService {
     @Autowired
     private TranslatorRepository translatorRepository;
 
+    @Autowired
+    private DocumentRepository documentRepository;
+
     public Translator create(TranslatorDto translatorDto) {
         if (translatorRepository.findByEmail(translatorDto.getEmail()).isPresent()) {
             throw new EmailAlreadyUsedException(translatorDto.getEmail());
         }
 
         Translator translator = new Translator();
-        BeanUtils.copyProperties(translatorDto, translator);
+        translator.setName(translatorDto.getName());
+        translator.setEmail(translatorDto.getEmail());
+        translator.setSourceLanguage(translatorDto.getSourceLanguage());
+        translator.setTargetLanguage(translatorDto.getTargetLanguage());
 
         return translatorRepository.save(translator);
     }
@@ -150,11 +158,14 @@ public class TranslatorService {
 
                 // If a new email has been passed, we need to check if it's not already in use
                 if((row[2] != null && !row[2].equals(foundTranslator.getEmail()))) {
-                    if(translatorRepository.findByEmail(row[2]).isPresent()) {
-                        throw new EmailAlreadyUsedException(row[2]);
+                    Optional<Translator> translatorByEmail = translatorRepository.findByEmail(row[2]);
+                    if(translatorByEmail.isPresent()) {
+                        throw new EmailAlreadyUsedException(row[2], translatorByEmail.get().getId());
                     }else if(!CheckIsValidEmail.isValid(row[2])){
                         throw new IllegalArgumentException("Email: " + row[2] + " is not valid.");
                     }else{
+                        //Updating documents author
+                        documentRepository.updateAuthor(foundTranslator.getEmail(), row[2]);
                         foundTranslator.setEmail(row[2]);
                     }
                 }

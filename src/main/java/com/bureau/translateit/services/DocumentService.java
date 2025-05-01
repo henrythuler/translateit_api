@@ -189,9 +189,10 @@ public class DocumentService {
                     }
                 }
 
+                System.out.println(author);
                 if(!author.isEmpty()){
-                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
                     foundDocument.setAuthor(author);
+                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
                     foundDocument.setTranslator(translator);
                 }
 
