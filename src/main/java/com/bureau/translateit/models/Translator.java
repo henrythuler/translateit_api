@@ -40,7 +40,7 @@ public class Translator {
     @CreationTimestamp(source = SourceType.DB)
     private Instant createdAt;
 
-    @OneToMany(mappedBy = "translator", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "translator", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Document> documents = new ArrayList<>();
 }

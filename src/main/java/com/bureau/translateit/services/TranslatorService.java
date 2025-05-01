@@ -2,7 +2,9 @@ package com.bureau.translateit.services;
 
 import com.bureau.translateit.exceptions.EmailAlreadyUsedException;
 import com.bureau.translateit.exceptions.InvalidTranslatorCsvException;
+import com.bureau.translateit.exceptions.NoRecordsFoundException;
 import com.bureau.translateit.exceptions.TranslatorNotFoundException;
+import com.bureau.translateit.models.Document;
 import com.bureau.translateit.models.Translator;
 import com.bureau.translateit.models.dtos.TranslatorDto;
 import com.bureau.translateit.repositories.DocumentRepository;
@@ -100,7 +102,9 @@ public class TranslatorService {
             Translator foundTranslator = translatorRepository.findByEmail(email).orElseThrow(() -> new TranslatorNotFoundException(email));
             return new PageImpl<>(List.of(foundTranslator));
         }
-        return translatorRepository.findAll(pageable);
+        Page<Translator> foundTranslators = translatorRepository.findAll(pageable);
+        if(foundTranslators.isEmpty()) throw new NoRecordsFoundException("Translators");
+        return foundTranslators;
     }
 
     public Translator getById(UUID id) {
