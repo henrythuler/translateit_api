@@ -47,6 +47,10 @@ public class TranslatorService {
 
         Translator translator = new Translator();
         translator.setName(translatorDto.getName());
+        //Verifying if the email is valid
+        if(!CheckIsValidEmail.isValid(translatorDto.getEmail())){
+            throw new IllegalArgumentException("Email: " + translatorDto.getEmail() + " is not valid");
+        }
         translator.setEmail(translatorDto.getEmail());
         translator.setSourceLanguage(translatorDto.getSourceLanguage());
         translator.setTargetLanguage(translatorDto.getTargetLanguage());
@@ -79,7 +83,7 @@ public class TranslatorService {
 
                 //Verifying if the email is valid
                 if(!CheckIsValidEmail.isValid(row[1])){
-                    throw new IllegalArgumentException("Email: " + row[1] + "is not valid");
+                    throw new IllegalArgumentException("Email: " + row[1] + " is not valid");
                 }
 
                 Translator translator = new Translator();
@@ -118,8 +122,13 @@ public class TranslatorService {
 
             // If a new email has been passed, we need to check if it's not already in use
             if (translatorDTO.getEmail() != null && !translatorDTO.getEmail().equals(foundTranslator.getEmail())) {
-                if (translatorRepository.findByEmail(translatorDTO.getEmail()).isPresent()) {
-                    throw new EmailAlreadyUsedException(translatorDTO.getEmail());
+                Optional<Translator> translatorByEmail = translatorRepository.findByEmail(translatorDTO.getEmail());
+                if (translatorByEmail.isPresent()) {
+                    throw new EmailAlreadyUsedException(translatorDTO.getEmail(), translatorByEmail.get().getName());
+                }else{
+                    //Updating documents author
+                    documentRepository.updateAuthor(foundTranslator.getEmail(), translatorDTO.getEmail());
+                    foundTranslator.setEmail(translatorDTO.getEmail());
                 }
             }
 
@@ -164,7 +173,7 @@ public class TranslatorService {
                 if((row[2] != null && !row[2].equals(foundTranslator.getEmail()))) {
                     Optional<Translator> translatorByEmail = translatorRepository.findByEmail(row[2]);
                     if(translatorByEmail.isPresent()) {
-                        throw new EmailAlreadyUsedException(row[2], translatorByEmail.get().getId());
+                        throw new EmailAlreadyUsedException(row[2], translatorByEmail.get().getName());
                     }else if(!CheckIsValidEmail.isValid(row[2])){
                         throw new IllegalArgumentException("Email: " + row[2] + " is not valid.");
                     }else{

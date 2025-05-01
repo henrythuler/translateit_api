@@ -7,7 +7,7 @@ public class EmailAlreadyUsedException extends RuntimeException {
         super("The email: " + email + " is already in use.");
     }
 
-    public EmailAlreadyUsedException(String email, UUID id) {
-        super("The email: " + email + " is already in use by id " + id);
+    public EmailAlreadyUsedException(String email, String name) {
+        super("The email: " + email + " is already in use by " + name);
     }
 }
