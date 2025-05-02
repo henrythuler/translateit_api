@@ -61,7 +61,7 @@ public class DocumentService {
             CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
-            //Headers should be: subject,content,locale(optional),author
+            //Headers should be: subject;content;locale(optional);author
             if(headers == null || headers.length < 3) {
                 throw new InvalidDocumentCsvException();
             }
@@ -69,24 +69,29 @@ public class DocumentService {
             String[] row;
             while((row = csvReader.readNext()) != null) {
                 Document document = new Document();
-                document.setSubject(row[0]);
-                document.setContent(row[1]);
+
+                String subject = row[0];
+                String content = row[1];
+
+                document.setSubject(subject);
+                document.setContent(content);
 
                 final String author;
 
                 //If there's 4 headers, means that locale exists
                 if(row.length == 4){
-                    if(row[0].isEmpty() || row[1].isEmpty() || row[3].isEmpty()){
+                    author = row[3];
+                    if(subject.isEmpty() || content.isEmpty() || author.isEmpty()){
                         throw new InvalidDocumentCsvException();
                     }
-                    document.setLocale(!row[2].isEmpty() ? row[2] : openAiApiClient.getLocale(row[1]));
-                    author = row[3];
+                    String locale = row[2];
+                    document.setLocale(!locale.isEmpty() ? locale : openAiApiClient.getLocale(content));
                 }else{
-                    if(row[0].isEmpty() || row[1].isEmpty() || row[2].isEmpty()){
-                        throw new InvalidDocumentCsvException();
-                    }       
                     author = row[2];
-                    document.setLocale(openAiApiClient.getLocale(row[1]));
+                    if(subject.isEmpty() || content.isEmpty() || author.isEmpty()){
+                        throw new InvalidDocumentCsvException();
+                    }
+                    document.setLocale(openAiApiClient.getLocale(content));
                 }
 
                 Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
@@ -139,6 +144,8 @@ public class DocumentService {
             foundDocument.setAuthor(documentDto.getAuthor());
             foundDocument.setTranslator(translator);
 
+            if(foundDocument.getLocale().isEmpty() || documentDto.getLocale().isEmpty()) foundDocument.setLocale(openAiApiClient.getLocale(documentDto.getContent()));
+
             return documentRepository.save(foundDocument);
         } catch (EntityNotFoundException e){
             throw new DocumentNotFoundException(id);
@@ -152,7 +159,7 @@ public class DocumentService {
             CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
-            //Headers should be: id,subject,content,locale(optional),author
+            //Headers should be: id;subject;content;locale(optional);author
             if (headers == null || headers.length < 4) {
                 throw new InvalidDocumentCsvException();
             }
@@ -168,33 +175,38 @@ public class DocumentService {
 
                 Document foundDocument = documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
 
-                if(row[1] != null && !row[1].isEmpty()) {
-                    foundDocument.setSubject(row[1]);
+                String subject = row[1];
+
+                if(subject != null && !subject.isEmpty()) {
+                    foundDocument.setSubject(subject);
                 }
 
-                if(row[2] != null && !row[2].isEmpty()) {
-                    foundDocument.setContent(row[2]);
+                String content = row[2];
+
+                if(content != null && !content.isEmpty()) {
+                    foundDocument.setContent(content);
                 }
 
                 String author;
 
-                //Verifying if the row has its 5 values (locale might be empty, but has been passed)
+                //Verifying if the row has 5 values (locale might be empty, but has been passed)
                 if(row.length == 5){
-                    foundDocument.setLocale(!row[3].isEmpty() ? row[3] : openAiApiClient.getLocale(row[1]));
-                    if(row[4] != null && !row[4].isEmpty()) {
-                        if(!CheckIsValidEmail.isValid(row[4])){
-                            throw new IllegalArgumentException("Email: " + row[4] + " is not valid.");
+                    String locale = row[3];
+                    foundDocument.setLocale(!locale.isEmpty() ? locale : openAiApiClient.getLocale(content));
+                    author = row[4];
+                    if(author != null && !author.isEmpty()) {
+                        if(!CheckIsValidEmail.isValid(author)){
+                            throw new IllegalArgumentException("Email: " + author + " is not valid.");
                         }
-                        author = row[4];
                     }else{
                         author = "";
                     }
                 }else{
-                    if(row[3] != null && !row[3].isEmpty()) {
-                        if(!CheckIsValidEmail.isValid(row[3])){
-                            throw new IllegalArgumentException("Email: " + row[3] + " is not valid.");
+                    author = row[3];
+                    if(author != null && !author.isEmpty()) {
+                        if(!CheckIsValidEmail.isValid(author)){
+                            throw new IllegalArgumentException("Email: " + author + " is not valid.");
                         }
-                        author = row[3];
                     }else{
                         author = "";
                     }
@@ -202,7 +214,8 @@ public class DocumentService {
 
                 if(!author.isEmpty()){
                     foundDocument.setAuthor(author);
-                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
+                    String finalAuthor = author;
+                    Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(finalAuthor));
                     foundDocument.setTranslator(translator);
                 }
 

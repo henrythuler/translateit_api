@@ -65,32 +65,37 @@ public class TranslatorService {
             CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(file.getInputStream())).withCSVParser(parser).build();
             String[] headers = csvReader.readNext();
 
-            //Headers should be: name,email,source_language,target_language
+            //Headers should be: name;email;source_language;target_language
             if(headers == null || headers.length < 4) {
                 throw new InvalidTranslatorCsvException();
             }
 
             String[] row;
             while((row = csvReader.readNext()) != null) {
-                if (translatorRepository.findByEmail(row[1]).isPresent()) {
-                    throw new EmailAlreadyUsedException(row[1]);
-                }
+                String name = row[0];
+                String email = row[1];
+                String sourceLanguage = row[2];
+                String targetLanguage = row[3];
 
                 //Verifying is there's an empty value
-                if(row[0].isEmpty() || row[1].isEmpty() || row[2].isEmpty() || row[3].isEmpty()){
+                if(name.isEmpty() || email.isEmpty() || sourceLanguage.isEmpty() || targetLanguage.isEmpty()){
                     throw new InvalidTranslatorCsvException();
                 }
 
+                if (translatorRepository.findByEmail(email).isPresent()) {
+                    throw new EmailAlreadyUsedException(email);
+                }
+
                 //Verifying if the email is valid
-                if(!CheckIsValidEmail.isValid(row[1])){
-                    throw new IllegalArgumentException("Email: " + row[1] + " is not valid");
+                if(!CheckIsValidEmail.isValid(email)){
+                    throw new IllegalArgumentException("Email: " + email + " is not valid");
                 }
 
                 Translator translator = new Translator();
-                translator.setName(row[0]);
-                translator.setEmail(row[1]);
-                translator.setSourceLanguage(row[2]);
-                translator.setTargetLanguage(row[3]);
+                translator.setName(name);
+                translator.setEmail(email);
+                translator.setSourceLanguage(sourceLanguage);
+                translator.setTargetLanguage(targetLanguage);
 
                 translators.add(translator);
             }
@@ -165,30 +170,38 @@ public class TranslatorService {
 
                 Translator foundTranslator = translatorRepository.findById(id).orElseThrow(() -> new TranslatorNotFoundException(id));
 
-                if(row[1] != null && !row[1].isEmpty()) {
-                    foundTranslator.setName(row[1]);
+                String name = row[1];
+
+                if(name != null && !name.isEmpty()) {
+                    foundTranslator.setName(name);
                 }
 
+                String email = row[2];
+
                 // If a new email has been passed, we need to check if it's not already in use
-                if((row[2] != null && !row[2].equals(foundTranslator.getEmail()))) {
-                    Optional<Translator> translatorByEmail = translatorRepository.findByEmail(row[2]);
+                if((email != null && !email.equals(foundTranslator.getEmail()))) {
+                    Optional<Translator> translatorByEmail = translatorRepository.findByEmail(email);
                     if(translatorByEmail.isPresent()) {
-                        throw new EmailAlreadyUsedException(row[2], translatorByEmail.get().getName());
-                    }else if(!CheckIsValidEmail.isValid(row[2])){
-                        throw new IllegalArgumentException("Email: " + row[2] + " is not valid.");
+                        throw new EmailAlreadyUsedException(email, translatorByEmail.get().getName());
+                    }else if(!CheckIsValidEmail.isValid(email)){
+                        throw new IllegalArgumentException("Email: " + email + " is not valid.");
                     }else{
                         //Updating documents author
-                        documentRepository.updateAuthor(foundTranslator.getEmail(), row[2]);
-                        foundTranslator.setEmail(row[2]);
+                        documentRepository.updateAuthor(foundTranslator.getEmail(), email);
+                        foundTranslator.setEmail(email);
                     }
                 }
 
-                if(row[3] != null && !row[3].isEmpty()) {
-                    foundTranslator.setSourceLanguage(row[3]);
+                String sourceLanguage = row[3];
+
+                if(sourceLanguage != null && !sourceLanguage.isEmpty()) {
+                    foundTranslator.setSourceLanguage(sourceLanguage);
                 }
 
-                if(row[4] != null && !row[4].isEmpty()) {
-                    foundTranslator.setTargetLanguage(row[4]);
+                String targetLanguage = row[4];
+
+                if(targetLanguage != null && !targetLanguage.isEmpty()) {
+                    foundTranslator.setTargetLanguage(targetLanguage);
                 }
 
                 updatedTranslators.add(foundTranslator);
