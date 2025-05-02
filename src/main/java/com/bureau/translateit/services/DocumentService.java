@@ -4,6 +4,7 @@ import com.bureau.translateit.exceptions.*;
 import com.bureau.translateit.models.Document;
 import com.bureau.translateit.models.Translator;
 import com.bureau.translateit.models.dtos.DocumentDto;
+import com.bureau.translateit.openai.OpenAiApiClient;
 import com.bureau.translateit.repositories.DocumentRepository;
 import com.bureau.translateit.repositories.TranslatorRepository;
 import com.bureau.translateit.utils.CheckIsValidEmail;
@@ -36,11 +37,20 @@ public class DocumentService {
     @Autowired
     private TranslatorRepository translatorRepository;
 
+    @Autowired
+    private OpenAiApiClient openAiApiClient;
+
     public Document create(DocumentDto documentDto){
             Translator translator = translatorRepository.findByEmail(documentDto.getAuthor()).orElseThrow(() -> new TranslatorNotFoundException(documentDto.getAuthor()));
             Document newDocument = new Document();
             BeanUtils.copyProperties(documentDto, newDocument);
             newDocument.setTranslator(translator);
+            if(documentDto.getLocale().isEmpty()){
+                String locale = openAiApiClient.getLocale(documentDto.getContent());
+                if(!locale.isEmpty()){
+                    newDocument.setLocale(locale);
+                }
+            }
             return documentRepository.save(newDocument);
     }
 
@@ -69,13 +79,14 @@ public class DocumentService {
                     if(row[0].isEmpty() || row[1].isEmpty() || row[3].isEmpty()){
                         throw new InvalidDocumentCsvException();
                     }
-                    document.setLocale(!row[2].isEmpty() ? row[2] : "");
+                    document.setLocale(!row[2].isEmpty() ? row[2] : openAiApiClient.getLocale(row[1]));
                     author = row[3];
                 }else{
                     if(row[0].isEmpty() || row[1].isEmpty() || row[2].isEmpty()){
                         throw new InvalidDocumentCsvException();
-                    }
+                    }       
                     author = row[2];
+                    document.setLocale(openAiApiClient.getLocale(row[1]));
                 }
 
                 Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
@@ -169,7 +180,7 @@ public class DocumentService {
 
                 //Verifying if the row has its 5 values (locale might be empty, but has been passed)
                 if(row.length == 5){
-                    foundDocument.setLocale(!row[3].isEmpty() ? row[3] : "");
+                    foundDocument.setLocale(!row[3].isEmpty() ? row[3] : openAiApiClient.getLocale(row[1]));
                     if(row[4] != null && !row[4].isEmpty()) {
                         if(!CheckIsValidEmail.isValid(row[4])){
                             throw new IllegalArgumentException("Email: " + row[4] + " is not valid.");
@@ -189,7 +200,6 @@ public class DocumentService {
                     }
                 }
 
-                System.out.println(author);
                 if(!author.isEmpty()){
                     foundDocument.setAuthor(author);
                     Translator translator = translatorRepository.findByEmail(author).orElseThrow(() -> new TranslatorNotFoundException(author));
